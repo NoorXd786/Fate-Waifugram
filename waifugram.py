@@ -32,7 +32,7 @@ def calldb():
                         FROM servants
                         WHERE ID_Servant = 1""")
     data = mycursor.fetchone()
-    print("ping: " + data[0])
+    print(f"ping: {data[0]}")
     time.sleep(1800)
     calldb()
 
@@ -106,10 +106,7 @@ def proteccservant(update: Update, context: CallbackContext):
         # Registro il ID_Servant
         ID_Servant = data[0]
 
-        # Rimozione comando dal messaggio
-        protecc = protecc.partition(' ')[2]
-
-        if protecc:
+        if protecc := protecc.partition(' ')[2]:
             # Prendo la waifu
             # Cerco il suo nome nel db
             mycursor.execute("""SELECT Name_Servant
@@ -137,7 +134,7 @@ def proteccservant(update: Update, context: CallbackContext):
             # 3 Multipli spaces
             protecc = re.sub(' +', ' ', protecc)
             Servant = re.sub(' +', ' ', Servant)
-                
+
             # Verifico se corrisponde
             if findWholeWord(protecc, Servant):
 
@@ -152,10 +149,7 @@ def proteccservant(update: Update, context: CallbackContext):
                                     ID_Supergroup = %s AND
                                     ID_Servant = %s
                                     """, (ID_User, ID_Supergroup, ID_Servant,))
-                data = mycursor.fetchone()
-                # if - Se esiste aggiungo un NP
-                # else - Se non esiste creo la relazione
-                if data:
+                if data := mycursor.fetchone():
                     mycursor.execute("""UPDATE relations
                                         SET NP = NP + 1
                                         WHERE ID_User= %s AND
@@ -186,16 +180,15 @@ def proteccservant(update: Update, context: CallbackContext):
                                  (ID_Supergroup,))
 
                 # Avverto che è riuscito ad ottenere il servant
-                context.bot.send_message(chat_id=ID_Supergroup, text="OwO you protecc'd " + original_Servant +
-                                                                     ". This servant has been added to your harem.",
-                                         reply_to_message_id=ID_Mess)
+                context.bot.send_message(
+                    chat_id=ID_Supergroup,
+                    text=f"OwO you protecc'd {original_Servant}. This servant has been added to your harem.",
+                    reply_to_message_id=ID_Mess,
+                )
                 return
         # Avverto l'errore e aggiorno il gruppo
         update.message.reply_text("rip, that's not quite right...")
-        UpdateGroup(ID_Supergroup, context)
-    else:
-        # Aggiorna i dati gruppo
-        UpdateGroup(ID_Supergroup, context)
+    UpdateGroup(ID_Supergroup, context)
 
 
 # Lista servants
@@ -218,9 +211,7 @@ def haremfatewaifugram(update: Update, context: CallbackContext):
                         ORDER BY Place asc 
                         LIMIT 21""",
                      (ID_User, ID_Supergroup,))
-    data = mycursor.fetchall()
-    # Formulo la lista
-    if data:
+    if data := mycursor.fetchall():
         i = 0
         Harem = ""
         for row in data:
@@ -231,7 +222,7 @@ def haremfatewaifugram(update: Update, context: CallbackContext):
 
         # Formulo il resto del messaggio
         Username = str(update.message.from_user.username)
-        Harem = Username + "'s harem in " + Supergroup_name + "\n\n" + Harem
+        Harem = f"{Username}'s harem in {Supergroup_name}" + "\n\n" + Harem
 
         # Rimuovo precedente messaggio harem se esiste
         mycursor.execute("""SELECT Mess_ID_List
@@ -279,9 +270,7 @@ def haremfatewaifugram(update: Update, context: CallbackContext):
                          (ID_User, ID_Supergroup,))
         data = mycursor.fetchone()
         # Se non ha un servant preferito stabilito prendo il primo in lista
-        if data:
-            PATH_IMG = data[0]
-        else:
+        if not data:
             mycursor.execute("""SELECT PATH_IMG_LOW_RESOLUTION
                                 FROM relations, servants 
                                 WHERE relations.ID_Supergroup = %s
@@ -290,8 +279,7 @@ def haremfatewaifugram(update: Update, context: CallbackContext):
                                 AND relations.Place = 1""",
                              (ID_Supergroup, ID_User,))
             data = mycursor.fetchone()
-            PATH_IMG = data[0]
-
+        PATH_IMG = data[0]
         Mess_ID_List = context.bot.send_document(chat_id=ID_Supergroup, document=open(PATH_IMG, 'rb'),
                                                  reply_markup=reply_markup, caption=Harem, reply_to_message_id=ID_Mess)
         # Inserisco il Mess_ID della sua lista nei dati utente
@@ -341,9 +329,7 @@ def PageSelection(update: Update, context: CallbackContext):
                                     ORDER BY Place asc
                                     LIMIT 20""",
                          (ID_User, ID_Supergroup, New_Page,))
-        data = mycursor.fetchall()
-        # Creazione del messaggio sfruttando 20 righe
-        if data:
+        if data := mycursor.fetchall():
             i = 0
             Harem = ""
             for row in data:
@@ -353,7 +339,7 @@ def PageSelection(update: Update, context: CallbackContext):
                     break
 
             # Formulo il messaggio
-            Harem = Username + "'s harem in " + Supergroup_name + "\n\n" + Harem
+            Harem = f"{Username}'s harem in {Supergroup_name}" + "\n\n" + Harem
 
             # Verifico quali bottoni è necessario implementare per il nuovo messaggio
 
@@ -393,12 +379,26 @@ def PageSelection(update: Update, context: CallbackContext):
 
             # Aggiungo i bottoni
             if AFTER and BEFORE:
-                keyboard = [[InlineKeyboardButton('⏪', callback_data='Before-' + str(New_Page)),
-                             InlineKeyboardButton('⏩', callback_data='Next-' + str(New_Page))]]
+                keyboard = [
+                    [
+                        InlineKeyboardButton(
+                            '⏪', callback_data=f'Before-{str(New_Page)}'
+                        ),
+                        InlineKeyboardButton(
+                            '⏩', callback_data=f'Next-{str(New_Page)}'
+                        ),
+                    ]
+                ]
             elif AFTER:
-                keyboard = [[InlineKeyboardButton('⏩', callback_data='Next-' + str(New_Page))]]
+                keyboard = [[InlineKeyboardButton('⏩', callback_data=f'Next-{str(New_Page)}')]]
             elif BEFORE:
-                keyboard = [[InlineKeyboardButton('⏪', callback_data='Before-' + str(New_Page))]]
+                keyboard = [
+                    [
+                        InlineKeyboardButton(
+                            '⏪', callback_data=f'Before-{str(New_Page)}'
+                        )
+                    ]
+                ]
             else:
                 keyboard = ""
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -429,20 +429,14 @@ def topfatewaifugram(update: Update, context: CallbackContext):
             GROUP BY relations.ID_User
             ORDER BY MAX_NP DESC
             LIMIT 10""", (ID_Supergroup,))
-    data = mycursor.fetchall()
-
-    # Formulo la lista
-    # Ordinati per np
-    if data:
-        i = 0
+    if data := mycursor.fetchall():
         Harem = ""
-        for row in data:
-            i += 1
+        for i, row in enumerate(data, start=1):
             Harem = str(Harem + str(i) + ". " + str(row[0]) + " -- " + str(row[1]) + "\n")
 
         # Formulo il resto del messaggio
         Supergroup_name = str(update.message.chat.title)
-        Harem = "Top harems in " + Supergroup_name + "\n\n" + Harem
+        Harem = f"Top harems in {Supergroup_name}" + "\n\n" + Harem
 
         # Invio il messaggio
         update.message.reply_text(Harem)
@@ -457,7 +451,7 @@ def changetime(update: Update, context: CallbackContext):
     ID_User = str(update.message.from_user.id)
     status = context.bot.get_chat_member(ID_Supergroup, ID_User).status
 
-    if status == "administrator" or status == "creator":
+    if status in ["administrator", "creator"]:
         # Prendo il messaggio
         NewTime = update.message.text
         try:
@@ -491,11 +485,7 @@ def tradeservant(update: Update, context: CallbackContext):
     # Prendo il messaggio
     NewTrade = update.message.text
 
-    # Rimozione comando dal messaggio
-    NewTrade = str(NewTrade.partition(' ')[2])
-
-    # Verifico se esiste testo dopo il comando
-    if NewTrade:
+    if NewTrade := str(NewTrade.partition(' ')[2]):
         # Verifico se il comando è il risposta ad un altro messaggio
         try:
             ID_Mess = int(update.message.reply_to_message.message_id)
@@ -530,8 +520,7 @@ def tradeservant(update: Update, context: CallbackContext):
                                             WHERE ID_User_1 = %s AND
                                             ID_Supergroup = %s""",
                                          (ID_User_1, ID_Supergroup))
-                        data = mycursor.fetchone()
-                        if data:
+                        if data := mycursor.fetchone():
                             try:
                                 # Rimuovo il vecchio trade
                                 mycursor.execute("""DELETE FROM trades WHERE ID_Supergroup = %s AND ID_User_1=%s""",
@@ -552,8 +541,7 @@ def tradeservant(update: Update, context: CallbackContext):
                                                                         AND relations.ID_Servant = servants.ID_Servant
                                                                         AND relations.Place = %s""",
                                          (ID_Supergroup, ID_User_1, Trade_1,))
-                        data = mycursor.fetchone()
-                        if data:
+                        if data := mycursor.fetchone():
                             Name_Servant_1 = data[0]
                             mycursor.execute("""SELECT Name_Servant
                                                                             FROM relations, servants 
@@ -562,8 +550,7 @@ def tradeservant(update: Update, context: CallbackContext):
                                                                             AND relations.ID_Servant = servants.ID_Servant
                                                                             AND relations.Place = %s""",
                                              (ID_Supergroup, ID_User_2, Trade_2,))
-                            data = mycursor.fetchone()
-                            if data:
+                            if data := mycursor.fetchone():
                                 Name_Servant_2 = data[0]
 
                                 # Creo i pulsanti
@@ -593,15 +580,13 @@ def tradeservant(update: Update, context: CallbackContext):
                                     "VALUES(%s,%s,%s,%s,%s,%s)",
                                     (ID_Supergroup, Mess_ID_Trade.message_id, ID_User_1, ID_User_2, Trade_1, Trade_2))
 
-                                return
                             else:
                                 update.message.reply_text(
                                     "Looks like that person doesn't have any servant to trade with...")
-                                return
                         else:
                             update.message.reply_text(
                                 "Looks like that you don't have any servant to trade with...")
-                            return
+                        return
     # Avverto dell'errore
     update.message.reply_text("kek that doesn't look right. <b>Reply</b> to someone like this:\n\n"
                               "<b>/tradeservant</b> <i>{servant number you want to give} {servant number "
